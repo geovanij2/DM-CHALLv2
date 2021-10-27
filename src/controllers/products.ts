@@ -11,6 +11,8 @@ export async function getSingleProductByName(req: Request, res: Response) {
 	} catch (err) {
 		if (err === 'NotFound') {
 			res.status(404).end()
+			return
 		}
+		throw err // unknown error
 	}
 }

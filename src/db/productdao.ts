@@ -24,7 +24,7 @@ export class PgProductDAO implements ProductDBHandler {
 		if (res.rowCount === 0) {
 			throw 'NotFound'
 		} else {
-			return res.rows[0]
+			return res.rows[0] as Product
 		}
 	}
 }
@@ -47,7 +47,7 @@ export class MockProductDAO implements ProductDBHandler {
 	}
 }
 
-interface Product {
+export interface Product {
 	product_id: number
 	name: string,
 	price: number,
