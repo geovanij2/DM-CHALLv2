@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+		"experimentalDecorators": true,
+		"forceConsistentCasingInFileNames": true,
+		"noErrorTruncation": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": false,
+		"strict": true,
+        "module": "commonjs",
+		"esModuleInterop": true,
+		"target": "es6",
+		"lib": ["es5", "es6", "dom", "es2017"],
+        "noImplicitAny": true,
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "baseUrl": ".",
+        "paths": {
+            "*": [
+                "node_modules/*",
+                "src/_types/*"
+            ]
+        }
+    },
+    "include": [
+		"src/**/*",
+		"tests/**/*"
+    ]
+}
