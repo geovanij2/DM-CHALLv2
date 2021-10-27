@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import * as orders from '../handlers/orders'
+import * as orders from '../controllers/orders'
 
 export async function register(router: Router) {
 	router.route('/orders')
