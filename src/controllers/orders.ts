@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import db from '../setup/database'
 import { OrderDAO, PgOrderDAO } from '../db/orderdao'
+import { isCreateOrderBody } from '../validators'
 
 export async function getAllOrders(req: Request, res: Response) {
 	const orderDAO = new OrderDAO(new PgOrderDAO(db))
@@ -30,17 +31,23 @@ export async function getSingleOrder(req: Request, res: Response) {
 }
 
 export async function createOrder(req: Request, res: Response) {
-	const { products }: { products: Array<{name: string, quantity: number}>} = req.body
+	const { products } = req.body
 	const orderDAO = new OrderDAO(new PgOrderDAO(db))
-	//TODO: VALIDAR products
-
 
 	try {
+
+		if(!isCreateOrderBody(products)) {
+			throw 'InvalidParams'
+		}
 		const order = await orderDAO.createOrder(products)
 		res.status(200).json(order)
 	} catch(e) {
 		if (e === 'NotFound') {
 			res.status(404).end()
+			return
+		}
+		if (e === 'InvalidParams') {
+			res.status(400).end()
 			return
 		}
 		throw e
