@@ -1,17 +1,16 @@
 import { Request, Response } from 'express'
 import db from '../setup/database'
+import { PgProductDAO, ProductDAO } from '../db/productdao'
 
 export async function getSingleProductByName(req: Request, res: Response) {
 	const { name } = req.params
+	const productDAO = new ProductDAO(new PgProductDAO(db))
 	try {
-		const dbResult = await db.query('SELECT name, price, quantity FROM products WHERE name = $1', [name])
-		console.log(dbResult)
-		if (dbResult.rowCount == 0) {
-			res.status(200).json({})
-		} else { //1 because product name is unique on DB
-			res.status(200).json(dbResult.rows[0])
-		}
+		const product = await productDAO.getProductByName(name)
+		res.status(200).json(product)
 	} catch (err) {
-		res.status(400).end()
+		if (err === 'NotFound') {
+			res.status(404).end()
+		}
 	}
 }
