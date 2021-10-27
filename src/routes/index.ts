@@ -1,4 +1,5 @@
 import { Request, Response, Router } from 'express'
+import * as orders from './orders'
 import * as products from './products'
 
 function errorHandler(err: any, req: Request, res: Response) {
@@ -8,6 +9,7 @@ function errorHandler(err: any, req: Request, res: Response) {
 
 const router = Router()
 
+orders.register(router)
 products.register(router)
 
 router.use(errorHandler)
