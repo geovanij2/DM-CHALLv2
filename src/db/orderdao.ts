@@ -41,7 +41,7 @@ export class PgOrderDAO implements OrderDBHandler {
 			INNER JOIN orders_products 
 				ON orders.order_id = orders_products.order_id
 			INNER JOIN products
-				ON products.product_id = orders_products.order_id`
+				ON products.product_id = orders_products.product_id`
 
 		const res = await this.client.query(sql, [])
 
@@ -62,8 +62,8 @@ export class PgOrderDAO implements OrderDBHandler {
 			INNER JOIN orders_products 
 				ON orders.order_id = orders_products.order_id
 			INNER JOIN products
-				ON products.product_id = orders_products.order_id
-			WHERE order_id = $1`
+				ON products.product_id = orders_products.product_id
+			WHERE orders.order_id = $1`
 
 			const res = await this.client.query(sql, [id])
 

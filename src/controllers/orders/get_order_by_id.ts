@@ -7,7 +7,7 @@ import { match } from 'fp-ts/Either'
 export async function getOrderById(req: Request, res: Response) {
 	const { id } = req.params
 	const orderDAO = new OrderDAO(new PgOrderDAO(db))
-
+	
 	const { status, body } = await handlerGetOrder(orderDAO, id)
 	res.status(status).json(body)
 }
