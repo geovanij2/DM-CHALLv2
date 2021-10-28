@@ -1,11 +1,13 @@
 import { Router } from 'express'
-import * as orders from '../controllers/orders'
+import { createOrder } from '../controllers/orders/create_order'
+import { getAllOrders } from '../controllers/orders/get_all_orders'
+import { getOrderById } from '../controllers/orders/get_order_by_id'
 
 export async function register(router: Router) {
 	router.route('/orders')
-		.post(orders.createOrder)
-		.get(orders.getAllOrders)
+		.post(createOrder)
+		.get(getAllOrders)
 
 	router.route('/orders/:id')
-		.get(orders.getSingleOrder)
+		.get(getOrderById)
 }

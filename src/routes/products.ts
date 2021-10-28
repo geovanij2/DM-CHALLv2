@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import * as products from '../controllers/products'
+import { getProductByName } from '../controllers/products/get_product_by_name'
 
 export async function register(router: Router) {
 	router.route('/products/:name')
-		.get(products.getSingleProductByName)
+		.get(getProductByName)
 }
