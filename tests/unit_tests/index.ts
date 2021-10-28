@@ -8,11 +8,13 @@ import { OrderDAO, MockOrderDAO, Order } from '../../src/db/orderdao'
 
 describe('Get product by name', () => {
 	it('Existing product', async () => {
-		const productDAO = new ProductDAO(new MockProductDAO())
+		const mockProductDB: Product[] = [{ product_id: 2, name: 'Alface', price: 347, quantity: 0 }]
+		const productDAO = new ProductDAO(new MockProductDAO(mockProductDB))
 		assert.deepEqual(await handlerGetProduct(productDAO, 'Alface'), { status: 200, body: { product_id: 2, name: 'Alface', price: 3.47, quantity: 0 }})
 	})
 	it('Non Existing product', async () => {
-		const productDAO = new ProductDAO(new MockProductDAO())
+		const mockProductDB: Product[] = [{ product_id: 2, name: 'Alface', price: 347, quantity: 0 }]
+		const productDAO = new ProductDAO(new MockProductDAO(mockProductDB))
 		assert.deepEqual(await handlerGetProduct(productDAO, 'nao_existe'), { status: 404, body: 'NotFound' })
 	})
 })

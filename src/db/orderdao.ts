@@ -35,7 +35,7 @@ export class PgOrderDAO implements OrderDBHandler {
 				orders.order_id as id,
 				name,
 				amount as quantity,
-				price,
+				round(price, 2) as price,
 				(amount * price) as subtotal
 			FROM orders
 			INNER JOIN orders_products 
@@ -56,7 +56,7 @@ export class PgOrderDAO implements OrderDBHandler {
 				orders.order_id as id,
 				name,
 				amount as quantity,
-				price,
+				round(price,2) as price,
 				(amount * price) as subtotal
 			FROM orders
 			INNER JOIN orders_products 
@@ -192,13 +192,13 @@ function formatAllOrders(rows: Array<JoinResult>): Array<Order> {
 			orders.push({
 				id: current_id.toString(),
 				products: current_products,
-				total: current_total,
+				total: current_total / 100,
 			})
 			current_id = rows[i].id
 			current_total = 0
 			current_products = []
 		}
-		current_total += rows[i].subtotal
+		current_total += rows[i].subtotal // in cents
 		current_products.push({
 			name: rows[i].name,
 			quantity: rows[i].quantity,
@@ -219,7 +219,7 @@ function formatOrder(rows: Array<JoinResult>): Order {
 	const products = []
 	let total = 0
 	for (let i = 0; i < rows.length; i++) {
-		total += rows[i].subtotal
+		total += rows[i].subtotal // subtotal in cents
 		products.push({
 			name: rows[i].name,
 			price: rows[i].price,
@@ -229,7 +229,7 @@ function formatOrder(rows: Array<JoinResult>): Order {
 	return {
 		id: rows[0].id.toString(),
 		products,
-		total,
+		total: total/100,
 	}
 }
 
@@ -255,6 +255,6 @@ interface JoinResult {
 	id: number,
 	name: string,
 	quantity: number,
-	price: number,
-	subtotal: number,
+	price: number, // in R$
+	subtotal: number, // in cents
 }

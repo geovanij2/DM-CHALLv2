@@ -10,8 +10,11 @@ async function populate() {
 		const records = parse(csvInput)
 		console.log(records)
 		records.shift() // removing first element
-		// todo: mapear os valores de string para o formato correto
-		const sql = format('INSERT INTO products (name, price, quantity) VALUES %L', records)
+		const productsWithPriceInCents = records.map((record: any) => {
+			return [ record[0], record[1].replace('.', ''), record[2]]
+		})
+
+		const sql = format('INSERT INTO products (name, price, quantity) VALUES %L', productsWithPriceInCents)
 		console.log(sql)
 		await db.query(sql, [])
 	} catch(err) {
