@@ -1,5 +1,6 @@
 import { Client } from 'pg'
 import { Product } from './productdao'
+import { Either, left, right } from 'fp-ts/Either'
 
 export class OrderDAO {
 	dbHandler: OrderDBHandler
@@ -8,15 +9,15 @@ export class OrderDAO {
 		this.dbHandler = dbHandler
 	}
 
-	async getAllOrders(): Promise<Array<Order>> {
+	async getAllOrders() {
 		return await this.dbHandler.getAllOrders()
 	}
 
-	async getOrder(id: string): Promise<Order> {
+	async getOrder(id: string) {
 		return await this.dbHandler.getOrder(id)
 	}
 
-	async createOrder(products: Array<ProductToBuy> ): Promise<Order> {
+	async createOrder(products: Array<ProductToBuy> ) {
 		return await this.dbHandler.createOrder(products)
 	}
 }
@@ -67,12 +68,12 @@ export class PgOrderDAO implements OrderDBHandler {
 			const res = await this.client.query(sql, [id])
 
 			if (res.rowCount === 0) {
-				throw 'NotFound'
+				return left<'NotFound'>('NotFound')
 			}
 
 			const rows: JoinResult[] = res.rows
 
-			return formatOrder(rows)
+			return right(formatOrder(rows))
 	}
 
 	async createOrder(products: Array<ProductToBuy> ) {
@@ -87,7 +88,7 @@ export class PgOrderDAO implements OrderDBHandler {
 				let sql = 'SELECT * FROM products WHERE name = $1 AND quantity >= $2'
 				const res = await this.client.query(sql, [products[i].name, products[i].quantity])
 				if (res.rowCount === 0) {
-					throw 'NotFound'
+					return left<'NotFound'>('NotFound')
 				}
 				const dbProduct = res.rows[0] as Product
 				prods.push({ name: dbProduct.name, price: dbProduct.price, quantity: products[i].quantity })
@@ -101,13 +102,12 @@ export class PgOrderDAO implements OrderDBHandler {
 			}
 			await this.client.query('COMMIT')
 
-			return {
+			return right({
 				id: orderId.toString(),
 				products: prods,
 				total,
-			}
+			})	
 		} catch (e) {
-			console.log(e)
 			await this.client.query('ROLLBACK')
 			throw e
 		}
@@ -175,8 +175,8 @@ function formatOrder(rows: Array<JoinResult>): Order {
 interface OrderDBHandler {
 	client: any,
 	getAllOrders: () => Promise<Array<Order>>
-	getOrder: (id: string) => Promise<Order>
-	createOrder: (products: Array<ProductToBuy>) => Promise<Order>
+	getOrder: (id: string) => Promise<Either<'NotFound', Order>>
+	createOrder: (products: Array<ProductToBuy>) => Promise<Either<'NotFound', Order>>
 }
 
 interface Order {
