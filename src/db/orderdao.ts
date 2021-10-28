@@ -17,7 +17,7 @@ export class OrderDAO {
 		return await this.dbHandler.getOrder(id)
 	}
 
-	async createOrder(products: Array<ProductToBuy> ) {
+	async createOrder(products: Array<ProductToBuy>) {
 		return await this.dbHandler.createOrder(products)
 	}
 }
@@ -114,6 +114,67 @@ export class PgOrderDAO implements OrderDBHandler {
 	}
 }
 
+export class MockOrderDAO implements OrderDBHandler {
+	client = {}
+	mockProductDB
+	mockOrderDB
+
+	constructor(mockProductDB: Array<Product>, mockOrderDB: Array<Order>) {
+		this.mockProductDB = mockProductDB
+		this.mockOrderDB = mockOrderDB
+	}
+
+	async getOrder(id: string) {
+		for (let i = 0; i < this.mockOrderDB.length; i++) {
+			if (this.mockOrderDB[i].id === id) {
+				return right(this.mockOrderDB[i])
+			}
+		}
+		return left<'NotFound'>('NotFound')
+	}
+
+	async getAllOrders() {
+		return this.mockOrderDB
+	}
+
+	async createOrder(products: Array<ProductToBuy>) {
+		const ret: Order = {
+			id: (this.mockOrderDB.length+1).toString(),
+			products: [],
+			total: 0,
+		} 
+
+		for (let i = 0; i < products.length; i++) {
+			let found = false
+			let index = -1
+			// procura produto com mesmo nome na base
+			for (let j = 0; j < this.mockProductDB.length; j++) {
+				if (this.mockProductDB[j].name === products[i].name) { //achou produto no banco
+					found = true
+					index = j
+				}
+			}
+			if (!found) {
+				return left<'NotFound'>('NotFound')
+			}
+			if (this.mockProductDB[index].quantity < products[i].quantity) {
+				return left<'InvalidQuantity'>('InvalidQuantity')
+			}
+			this.mockProductDB[index].quantity -= products[i].quantity
+			ret.products.push({
+				name: this.mockProductDB[index].name,
+				price: this.mockProductDB[index].price / 100,
+				quantity: products[i].quantity
+			})
+			ret.total += this.mockProductDB[index].price * products[i].quantity
+		}
+		//fix price format
+		ret.total /= 100
+		this.mockOrderDB.push(ret) // salva no banco
+		return right(ret)
+	}
+}
+
 function formatAllOrders(rows: Array<JoinResult>): Array<Order> {
 	if (rows.length === 0) {
 		return []
@@ -176,10 +237,10 @@ interface OrderDBHandler {
 	client: any,
 	getAllOrders: () => Promise<Array<Order>>
 	getOrder: (id: string) => Promise<Either<'NotFound', Order>>
-	createOrder: (products: Array<ProductToBuy>) => Promise<Either<'NotFound', Order>>
+	createOrder: (products: Array<ProductToBuy>) => Promise<Either<'NotFound' | 'InvalidQuantity', Order>>
 }
 
-interface Order {
+export interface Order {
 	id: string,
 	products: Array<{name: string, price: number, quantity: number}>,
 	total: number,

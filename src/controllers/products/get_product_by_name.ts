@@ -8,14 +8,14 @@ export async function getProductByName(req: Request, res: Response) {
 	const { name } = req.params
 	const productDAO = new ProductDAO(new PgProductDAO(db))
 	try {
-		const result = await HandlerGetProduct(productDAO,name)
+		const result = await handlerGetProduct(productDAO,name)
 		res.status(result.status).json(result.body)
 	} catch (err) {
 		throw err // unknown error
 	}
 }
 
-async function HandlerGetProduct(productDAO: ProductDAO, name: string) {
+export async function handlerGetProduct(productDAO: ProductDAO, name: string) {
 	const result = await productDAO.getProductByName(name)
 	return pipe(result, match(
 		(e) => { return {status: 404, body: e as any} },
