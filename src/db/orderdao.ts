@@ -176,7 +176,7 @@ export class MockOrderDAO implements OrderDBHandler {
 	}
 }
 
-function formatAllOrders(rows: Array<JoinResult>): Array<Order> {
+export function formatAllOrders(rows: Array<JoinResult>): Array<Order> {
 	if (rows.length === 0) {
 		return []
 	}
@@ -216,7 +216,10 @@ function formatAllOrders(rows: Array<JoinResult>): Array<Order> {
 	return orders
 }
 
-function formatOrder(rows: Array<JoinResult>): Order {
+export function formatOrder(rows: Array<JoinResult>): Order {
+	if (rows.length === 0) {
+		throw 'InvalidParameter'
+	}
 	const products = []
 	let total = 0
 	for (let i = 0; i < rows.length; i++) {
@@ -252,7 +255,7 @@ interface ProductToBuy {
 	quantity: number,
 }
 
-interface JoinResult {
+export interface JoinResult {
 	id: number,
 	name: string,
 	quantity: number,

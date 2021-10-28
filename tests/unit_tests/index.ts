@@ -4,7 +4,7 @@ import { handlerCreateOrder } from '../../src/controllers/orders/create_order'
 import { handlerGetAllOrders } from '../../src/controllers/orders/get_all_orders'
 import { handlerGetOrder } from '../../src/controllers/orders/get_order_by_id'
 import { ProductDAO, MockProductDAO, Product } from '../../src/db/productdao'
-import { OrderDAO, MockOrderDAO, Order } from '../../src/db/orderdao'
+import { OrderDAO, MockOrderDAO, Order, formatOrder, formatAllOrders } from '../../src/db/orderdao'
 
 describe('Get product by name', () => {
 	it('Existing product', async () => {
@@ -215,5 +215,157 @@ describe('Get order by id', () => {
 		const mockProductDB: Product[] = [ { product_id: 1, name: 'Coffee', price: 243, quantity: 3 } ]
 		const orderDAO = new OrderDAO(new MockOrderDAO(mockProductDB, mockOrderDB))
 		assert.deepEqual(await handlerGetOrder(orderDAO, "1"), { status: 404, body: 'NotFound' })
+	})
+})
+
+describe('Format Order', () => {
+	it('Empty list as parameter', () => {
+		assert.throws(() => formatOrder([]), 'InvalidParameter')
+	})
+	it('Join result with single product', () => {
+		const join = [ { id: 1, name: 'teste', quantity: 3, price: 2.30, subtotal: 690 } ]
+		const res = {
+			id: '1',
+			products: [
+				{
+					name: 'teste',
+					quantity: 3,
+					price: 2.30
+				}
+			],
+			total: 6.9
+		}
+		assert.deepEqual(formatOrder(join), res)
+	})
+	it('Join result with more than one product', () => {
+		const join = [ 
+			{ id: 1, name: 'teste', quantity: 3, price: 2.30, subtotal: 690 },
+			{ id: 1, name: 'banana', quantity: 2, price: 1.73, subtotal: 346 }
+		]
+		const res = {
+			id: '1',
+			products: [
+				{
+					name: 'teste',
+					quantity: 3,
+					price: 2.30
+				},
+				{
+					name: 'banana',
+					quantity: 2,
+					price: 1.73
+				}
+			],
+			total: 10.36
+		}
+		assert.deepEqual(formatOrder(join), res)
+	})
+})
+
+describe('Format All Orders', () => {
+	it('Zero orders', () => {
+		assert.deepEqual(formatAllOrders([]), [])
+	})
+	it('One order', () => {
+		const join = [ 
+			{ id: 1, name: 'teste', quantity: 3, price: 2.30, subtotal: 690 }
+		]
+		const res =[ {
+			id: '1',
+			products: [
+				{
+					name: 'teste',
+					quantity: 3,
+					price: 2.30
+				},
+			],
+			total: 6.9
+		} ]
+		assert.deepEqual(formatAllOrders(join), res)
+	})
+	it('More than one order', () => {
+		const join = [ 
+			{ id: 1, name: 'teste', quantity: 3, price: 2.30, subtotal: 690 },
+			{ id: 2, name: 'banana', quantity: 2, price: 1.73, subtotal: 346 }
+		]
+		const res =[ 
+			{
+				id: '1',
+				products: [
+					{
+						name: 'teste',
+						quantity: 3,
+						price: 2.30
+					},
+				],
+				total: 6.9
+			},
+			{
+				id: '2',
+				products: [
+					{
+						name: 'banana',
+						quantity: 2,
+						price: 1.73
+					},
+				],
+				total: 3.46
+			}
+		]
+		assert.deepEqual(formatAllOrders(join), res)
+	})
+	it('Multiple Orders with more than one product each', () => {
+		const join = [ 
+			{ id: 1, name: 'teste', quantity: 3, price: 2.30, subtotal: 690 },
+			{ id: 1, name: 'banana', quantity: 2, price: 1.73, subtotal: 346 },
+			{ id: 2, name: 'teste', quantity: 3, price: 2.30, subtotal: 690 },
+			{ id: 2, name: 'banana', quantity: 2, price: 1.73, subtotal: 346 },
+			{ id: 2, name: 'alface', quantity: 1, price: 3.2, subtotal: 320 },
+			{ id: 2, name: 'tomate', quantity: 2, price: 8.9, subtotal: 1780 }
+		]
+		const res =[ {
+			id: '1',
+			products: [
+				{
+					name: 'teste',
+					quantity: 3,
+					price: 2.30
+				},
+				{
+					name: 'banana',
+					quantity: 2,
+					price: 1.73
+				}
+			],
+			total: 10.36
+			},
+			{
+				id: '2',
+				products: [
+					{
+						name: 'teste',
+						quantity: 3,
+						price: 2.30
+					},
+					{
+						name: 'banana',
+						quantity: 2,
+						price: 1.73
+					},
+					{
+						name: 'alface',
+						quantity: 1,
+						price: 3.20
+					},
+					{
+						name: 'tomate',
+						quantity: 2,
+						price: 8.9
+					}
+				],
+				total: 31.36
+			}
+		]
+		assert.deepEqual(formatAllOrders(join), res)
 	})
 })
