@@ -1,18 +1,24 @@
 import { Request, Response } from 'express'
 import db from '../setup/database'
 import { PgProductDAO, ProductDAO } from '../db/productdao'
+import { match } from 'fp-ts/Either'
+import { pipe } from 'fp-ts/function'
 
 export async function getSingleProductByName(req: Request, res: Response) {
 	const { name } = req.params
 	const productDAO = new ProductDAO(new PgProductDAO(db))
 	try {
-		const product = await productDAO.getProductByName(name)
-		res.status(200).json(product)
+		const result = await HandlerGetSingleProduct(productDAO,name)
+		res.status(result.status).json(result.body)
 	} catch (err) {
-		if (err === 'NotFound') {
-			res.status(404).end()
-			return
-		}
 		throw err // unknown error
 	}
+}
+
+async function HandlerGetSingleProduct(productDAO: ProductDAO, name: string) {
+	const result = await productDAO.getProductByName(name)
+	return pipe(result, match(
+		(e) => { return {status: 404, body: e as any} },
+		(product) => { return { status: 200, body: product } }
+	))
 }

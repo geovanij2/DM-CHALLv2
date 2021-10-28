@@ -3,11 +3,8 @@ import { ProductDAO, PgProductDAO } from '../db/productdao'
 import db from './database'
 
 export function setupRabbitMQ() {
-    console.log('BANANA')
     amqp.connect('amqp://localhost:5672', function(error0: any, connection: any) {
-        console.log('BANANA2')
         if (error0) {
-            console.log('BANANA3')
             throw error0
         }
         connection.createChannel(function(error1: any, channel: any) {
@@ -23,15 +20,19 @@ export function setupRabbitMQ() {
 
             console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
 
-            channel.consume(queue, function(msg: any) {
+            channel.consume(queue, async function(msg: any) {
                 const productDAO = new ProductDAO(new PgProductDAO(db))
                 const productName = msg.content.toString()
-                console.log(msg)
-                if (msg.exchange === 'stock' && msg.rountingKey === 'incremented') {
-                    handlerIncremented(productDAO, productName)
+
+                if (msg.fields.exchange === 'stock' && msg.fields.routingKey === 'incremented') {
+                    console.log('INCREMENTAR')
+                    await handlerIncremented(productDAO, productName)
+                    console.log('INCREMENTOU')
                 }
-                if (msg.exchange === 'stock' && msg.rountingKey === 'decremented') {
-                    handlerDecremented(productDAO, productName)
+                if (msg.fields.exchange === 'stock' && msg.fields.routingKey === 'decremented') {
+                    console.log('DECREMENTAR')
+                    await handlerDecremented(productDAO, productName)
+                    console.log('DECREMENTOU')
                 }
 
                 console.log(" [x] Received %s", msg.content.toString());
@@ -42,9 +43,9 @@ export function setupRabbitMQ() {
     })
 }
 
-function handlerIncremented(productDAO: ProductDAO, productName: string) {
+async function handlerIncremented(productDAO: ProductDAO, productName: string) {
     try {
-        productDAO.incrementProductQuantity(productName)
+        await productDAO.incrementProductQuantity(productName)
     } catch(e) {
         if (e === 'NotFound') {
             return // TODO: mudar para Either<L, R> e retornar um Either<L>
@@ -54,9 +55,9 @@ function handlerIncremented(productDAO: ProductDAO, productName: string) {
     }
 }
 
-function handlerDecremented(productDAO: ProductDAO, productName: string) {
+async function handlerDecremented(productDAO: ProductDAO, productName: string) {
     try {
-        productDAO.decrementProductQuantity(productName)
+        await productDAO.decrementProductQuantity(productName)
     } catch(e) {
         if (e === 'NotFound') {
             return // TODO: mudar para Either<L, R> e retornar um Either<L>
