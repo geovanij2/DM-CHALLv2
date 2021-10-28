@@ -12,7 +12,7 @@ export async function getAllOrders(req: Request, res: Response) {
 		throw e // not expecting a known error
 	}
 }
-
+	
 export async function getSingleOrder(req: Request, res: Response) {
 	const { id } = req.params
 

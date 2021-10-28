@@ -7,9 +7,18 @@ export class ProductDAO {
 		this.dbHandler = dbHandler
 	}
 
-	async getProductByName(name: string): Promise<Product> {
+	async getProductByName(name: string) {
 		return await this.dbHandler.getProductByName(name)
 	}
+
+	async incrementProductQuantity(name: string) {
+		return await this.dbHandler.incrementProductQuantity(name)
+	}
+
+	async decrementProductQuantity(name: string) {
+		return await this.dbHandler.decrementProductQuantity(name)
+	}
+
 }
 
 export class PgProductDAO implements ProductDBHandler {
@@ -26,6 +35,22 @@ export class PgProductDAO implements ProductDBHandler {
 		} else {
 			return res.rows[0] as Product
 		}
+	}
+
+	async incrementProductQuantity(name: string) {
+		const res = await this.client.query('UPDATE products SET quantity = quantity + 1 WHERE name = $1 RETURNING *', [name])
+		if (res.rowCount === 0) {
+			throw 'NotFound'
+		}
+		return res.rows[0] as Product
+	}
+
+	async decrementProductQuantity(name: string) {
+		const res = await this.client.query('UPDATE products SET quantity = quantity - 1 WHERE name = $1 RETURNING *', [name])
+		if (res.rowCount === 0) {
+			throw 'NotFound'
+		}
+		return res.rows[0] as Product
 	}
 }
 
@@ -45,6 +70,29 @@ export class MockProductDAO implements ProductDBHandler {
 		}
 		throw 'NotFound'
 	}
+
+	async incrementProductQuantity(name: string) {
+		for(let i = 0; i  < this.mockProductDB.length; i++) {
+			if (this.mockProductDB[i].name === name) {
+				this.mockProductDB[i].quantity += 1
+				return this.mockProductDB[i]
+			}
+		}
+		throw 'NotFound'
+	}
+
+	async decrementProductQuantity(name: string) {
+		for(let i = 0; i  < this.mockProductDB.length; i++) {
+			if (this.mockProductDB[i].name === name) {
+				if (this.mockProductDB[i].quantity === 0) {
+					throw 'ConstraintError'
+				}
+				this.mockProductDB[i].quantity -= 1
+				return this.mockProductDB[i]
+			}
+		}
+		throw 'NotFound'
+	}
 }
 
 export interface Product {
@@ -56,5 +104,7 @@ export interface Product {
 
 interface ProductDBHandler {
 	client: any,
-	getProductByName: (name: string) => Promise<Product>
+	getProductByName: (name: string) => Promise<Product>,
+	incrementProductQuantity: (name: string) => Promise<Product>,
+	decrementProductQuantity: (name: string) => Promise<Product>,
 }
