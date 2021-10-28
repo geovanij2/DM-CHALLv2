@@ -35,7 +35,7 @@ export class PgOrderDAO implements OrderDBHandler {
 				orders.order_id as id,
 				name,
 				amount as quantity,
-				round(price, 2) as price,
+				round(price/100, 2) as price,
 				(amount * price) as subtotal
 			FROM orders
 			INNER JOIN orders_products 
@@ -56,7 +56,7 @@ export class PgOrderDAO implements OrderDBHandler {
 				orders.order_id as id,
 				name,
 				amount as quantity,
-				round(price,2) as price,
+				round(price/100,2) as price,
 				(amount * price) as subtotal
 			FROM orders
 			INNER JOIN orders_products 
@@ -91,8 +91,8 @@ export class PgOrderDAO implements OrderDBHandler {
 					return left<'NotFound'>('NotFound')
 				}
 				const dbProduct = res.rows[0] as Product
-				prods.push({ name: dbProduct.name, price: dbProduct.price, quantity: products[i].quantity })
-				total += dbProduct.price * products[i].quantity
+				prods.push({ name: dbProduct.name, price: dbProduct.price / 100, quantity: products[i].quantity })
+				total += dbProduct.price * products[i].quantity // price in cents
 
 				sql = 'UPDATE products SET quantity = quantity - $1 WHERE product_id = $2'
 				await this.client.query(sql, [products[i].quantity, dbProduct.product_id])
@@ -105,7 +105,7 @@ export class PgOrderDAO implements OrderDBHandler {
 			return right({
 				id: orderId.toString(),
 				products: prods,
-				total,
+				total: total / 100,
 			})	
 		} catch (e) {
 			await this.client.query('ROLLBACK')
@@ -209,7 +209,7 @@ function formatAllOrders(rows: Array<JoinResult>): Array<Order> {
 	orders.push({
 		id: current_id.toString(),
 		products: current_products,
-		total: current_total,
+		total: current_total / 100,
 	})
 
 	return orders
