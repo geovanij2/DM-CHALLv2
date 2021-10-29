@@ -36,11 +36,11 @@ export function decrementedConsumer(channel: any) {
 
     channel.consume(queue, async function(msg: any) {
         const productDAO = new ProductDAO(new PgProductDAO(db))
-        const productName = msg.content.toString()
+        const productName = msg.content.toString().replace(/\"/g, '')
 
         await handlerDecremented(productDAO, productName)
 
-        console.log(" [x] Received %s", msg.content.toString());
+        console.log(" [x] Received %s to decremented", productName);
     }, {
         noAck: true
     })

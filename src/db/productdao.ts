@@ -1,4 +1,4 @@
-import { Client } from 'pg'
+import { Pool } from 'pg'
 import { Either, left, right } from 'fp-ts/Either'
 import { isConstraintError } from '../utils'
 
@@ -24,37 +24,54 @@ export class ProductDAO {
 }
 
 export class PgProductDAO implements ProductDBHandler {
-	client: Client
+	pool
 
-	constructor(client: Client) {
-		this.client = client
+	constructor(pool: Pool) {
+		this.pool = pool
 	}
 
 	async getProductByName(name: string) {
-		const res = await this.client.query('SELECT name, round(price/100, 2) as price, quantity FROM products WHERE name = $1', [name])
-		if (res.rowCount === 0) {
-			return left<'NotFound'>('NotFound')
-		} else {
-			return right(res.rows[0] as Product)
+		const client = await this.pool.connect()
+		try {
+			const res = await client.query('SELECT name, round(price/100, 2) as price, quantity FROM products WHERE name = $1', [name])
+			client.release()
+			if (res.rowCount === 0) {
+				return left<'NotFound'>('NotFound')
+			} else {
+				return right(res.rows[0] as Product)
+			}
+		} catch(e) {
+			client.release()
+			throw e
 		}
 	}
 
 	async incrementProductQuantity(name: string) {
-		const res = await this.client.query('UPDATE products SET quantity = quantity + 1 WHERE name = $1 RETURNING name, round(price/100, 2) as price, quantity', [name])
-		if (res.rowCount === 0) {
-			return left<'NotFound'>('NotFound')
-		}
-		return right(res.rows[0] as Product)
-	}
-
-	async decrementProductQuantity(name: string) {
+		const client = await this.pool.connect()
 		try {
-			const res = await this.client.query('UPDATE products SET quantity = quantity - 1 WHERE name = $1 RETURNING name, round(price/100, 2) as price, quantity', [name])
+			const res = await client.query('UPDATE products SET quantity = quantity + 1 WHERE name = $1 RETURNING name, round(price/100, 2) as price, quantity', [name])
+			client.release()
 			if (res.rowCount === 0) {
 				return left<'NotFound'>('NotFound')
 			}
 			return right(res.rows[0] as Product)
 		} catch(e) {
+			client.release()
+			throw e
+		}
+	}
+
+	async decrementProductQuantity(name: string) {
+		const client = await this.pool.connect()
+		try {
+			const res = await client.query('UPDATE products SET quantity = quantity - 1 WHERE name = $1 RETURNING name, round(price/100, 2) as price, quantity', [name])
+			client.release()
+			if (res.rowCount === 0) {
+				return left<'NotFound'>('NotFound')
+			}
+			return right(res.rows[0] as Product)
+		} catch(e) {
+			client.release()
 			if (isConstraintError(e)){
 				return left<'ConstraintError'>('ConstraintError')
 			}
@@ -64,7 +81,6 @@ export class PgProductDAO implements ProductDBHandler {
 }
 
 export class MockProductDAO implements ProductDBHandler {
-	client = {}
 	mockProductDB
 
 	constructor(mockProductDB: Array<Product>) {
@@ -130,7 +146,6 @@ export interface Product {
 }
 
 interface ProductDBHandler {
-	client: any,
 	getProductByName: (name: string) => Promise<Either<'NotFound', Product>>,
 	incrementProductQuantity: (name: string) => Promise<Either<'NotFound', Product>>,
 	decrementProductQuantity: (name: string) => Promise<Either<'NotFound' | 'ConstraintError', Product>>,

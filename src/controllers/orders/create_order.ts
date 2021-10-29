@@ -1,16 +1,20 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import db from '../../setup/database'
 import { OrderDAO, PgOrderDAO } from '../../db/orderdao'
 import { isCreateOrderBody } from '../../validators'
 import { pipe } from 'fp-ts/function'
 import { match } from 'fp-ts/Either'
 
-export async function createOrder(req: Request, res: Response) {
+export async function createOrder(req: Request, res: Response, next: NextFunction) {
 	const { products } = req.body
 	const orderDAO = new OrderDAO(new PgOrderDAO(db))
 
-	const { status, body } = await handlerCreateOrder(orderDAO, products)
-	res.status(status).json(body)
+	try {
+		const { status, body } = await handlerCreateOrder(orderDAO, products)
+		res.status(status).json(body)
+	} catch(err) {
+		next(err)
+	}
 }
 
 export async function handlerCreateOrder(orderDAO: OrderDAO, products: any) {

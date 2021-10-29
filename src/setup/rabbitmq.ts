@@ -4,7 +4,7 @@ import { decrementedConsumer } from '../amqp/decremented_consumer'
 
 export async function setupRabbitMQ() {
     const channel = new Promise((resolve, _) => {
-        amqp.connect('amqp://localhost:5672', function(error0: any, connection: any) {
+        amqp.connect(process.env.RABBITMQ_URL as string, function(error0: any, connection: any) {
             if (error0) {
                 throw error0
             }

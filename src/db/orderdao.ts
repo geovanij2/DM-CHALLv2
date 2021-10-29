@@ -1,4 +1,4 @@
-import { Client } from 'pg'
+import { Pool } from 'pg'
 import { Product } from './productdao'
 import { Either, left, right } from 'fp-ts/Either'
 
@@ -23,13 +23,14 @@ export class OrderDAO {
 }
 
 export class PgOrderDAO implements OrderDBHandler {
-	client
+	pool
 
-	constructor(client: Client) {
-		this.client = client
+	constructor(pool: Pool) {
+		this.pool = pool
 	}
 
 	async getAllOrders() {
+		const client = await this.pool.connect()
 		const sql = `
 			SELECT
 				orders.order_id as id,
@@ -44,11 +45,15 @@ export class PgOrderDAO implements OrderDBHandler {
 				ON products.product_id = orders_products.product_id
 			ORDER BY id ASC`
 
-		const res = await this.client.query(sql, [])
-
-		const rows: JoinResult[] =  res.rows
-
-		return formatAllOrders(rows)
+		try {
+			const res = await client.query(sql, [])
+			client.release()	
+			const rows: JoinResult[] =  res.rows
+			return formatAllOrders(rows)
+		} catch(err) {
+			client.release()
+			throw err
+		}
 	}
 
 	async getOrder(id: string) {
@@ -66,7 +71,10 @@ export class PgOrderDAO implements OrderDBHandler {
 				ON products.product_id = orders_products.product_id
 			WHERE orders.order_id = $1`
 
-			const res = await this.client.query(sql, [id])
+		const client = await this.pool.connect()
+		try{
+			const res = await client.query(sql, [id])
+			client.release()
 
 			if (res.rowCount === 0) {
 				return left<'NotFound'>('NotFound')
@@ -75,48 +83,52 @@ export class PgOrderDAO implements OrderDBHandler {
 			const rows: JoinResult[] = res.rows
 
 			return right(formatOrder(rows))
+		} catch(e) {
+			client.release()
+			throw e
+		}
 	}
 
-	async createOrder(products: Array<ProductToBuy> ) {
+	async createOrder(productsToBuy: Array<ProductToBuy> ) {
+		const client = await this.pool.connect()
 		try {
-			await this.client.query('BEGIN')
-			const res = await this.client.query('INSERT INTO orders (order_date) VALUES (now()) RETURNING order_id', [])
-			const orderId: number = res.rows[0].order_id
-			const prods = []
-			let total = 0
-
-			for (let i = 0; i < products.length; i++) {
-				let sql = 'SELECT * FROM products WHERE name = $1 AND quantity >= $2'
-				const res = await this.client.query(sql, [products[i].name, products[i].quantity])
-				if (res.rowCount === 0) {
+			for (let i = 0; i < productsToBuy.length; i++) {
+				const sql = 'SELECT * FROM products WHERE name = $1'
+				const res1 = await client.query(sql, [productsToBuy[i].name])
+				if (res1.rowCount === 0) {
 					return left<'NotFound'>('NotFound')
 				}
-				const dbProduct = res.rows[0] as Product
-				prods.push({ name: dbProduct.name, price: dbProduct.price / 100, quantity: products[i].quantity })
-				total += dbProduct.price * products[i].quantity // price in cents
+				const dbProduct = res1.rows[0] as Product
+				if (dbProduct.quantity < productsToBuy[i].quantity) {
+					return left<'InvalidQuantity'>('InvalidQuantity')
+				}
+			} // if loop ends wihtout return order can be made
 
-				sql = 'UPDATE products SET quantity = quantity - $1 WHERE product_id = $2'
-				await this.client.query(sql, [products[i].quantity, dbProduct.product_id])
+			await client.query('BEGIN')
+			const res2 = await client.query('INSERT INTO orders (order_date) VALUES (now()) RETURNING order_id', [])
+			const orderId = res2.rows[0].order_id
+
+			for (let i = 0; i < productsToBuy.length; i++) {
+				let sql = 'UPDATE products SET quantity = quantity - $1 WHERE name = $2 RETURNING product_id, name, price, round(price/100, 2) as roudedprice, quantity'
+				const res3 = await client.query(sql, [productsToBuy[i].quantity, productsToBuy[i].name])
+				const dbProduct = res3.rows[0] as Product & { roundedprice: number }
 
 				sql = 'INSERT INTO orders_products (order_id, product_id, amount) VALUES ($1, $2, $3)'
-				await this.client.query(sql, [orderId, dbProduct.product_id, products[i].quantity])
+				await client.query(sql, [orderId, dbProduct.product_id, productsToBuy[i].quantity])
 			}
-			await this.client.query('COMMIT')
+			await client.query('COMMIT')
 
-			return right({
-				id: orderId.toString(),
-				products: prods,
-				total: total / 100,
-			})	
+			return await this.getOrder(orderId)	
 		} catch (e) {
-			await this.client.query('ROLLBACK')
+			await client.query('ROLLBACK')
 			throw e
+		} finally {
+			client.release()
 		}
 	}
 }
 
 export class MockOrderDAO implements OrderDBHandler {
-	client = {}
 	mockProductDB
 	mockOrderDB
 
@@ -238,7 +250,6 @@ export function formatOrder(rows: Array<JoinResult>): Order {
 }
 
 interface OrderDBHandler {
-	client: any,
 	getAllOrders: () => Promise<Array<Order>>
 	getOrder: (id: string) => Promise<Either<'NotFound', Order>>
 	createOrder: (products: Array<ProductToBuy>) => Promise<Either<'NotFound' | 'InvalidQuantity', Order>>

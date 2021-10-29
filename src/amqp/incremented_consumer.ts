@@ -4,10 +4,8 @@ import db from '../setup/database'
 async function handlerIncremented(productDAO: ProductDAO, productName: string) {
     try {
         await productDAO.incrementProductQuantity(productName)
+
     } catch(e) {
-        if (e === 'NotFound') {
-            return // TODO: mudar para Either<L, R> e retornar um Either<L>
-        }
         console.log(e) // log unexpected error
         return
     }
@@ -32,11 +30,11 @@ export function incrementedConsumer(channel: any) {
 
     channel.consume(queue, async function(msg: any) {
         const productDAO = new ProductDAO(new PgProductDAO(db))
-        const productName = msg.content.toString()
+        const productName = msg.content.toString().replace(/\"/g, '')
             
         await handlerIncremented(productDAO, productName)
 
-        console.log(" [x] Received %s", msg.content.toString());
+        console.log(" [x] Received %s to incremented", productName);
     }, {
         noAck: true
     })
