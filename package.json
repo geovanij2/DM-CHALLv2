@@ -8,6 +8,7 @@
   "scripts": {
     "clean": "rm -rf dist && rm -rf node_modules",
     "test": "mocha --exit --timeout 10000 dist/tests/unit_tests",
+    "coverage": "nyc yarn test",
     "start": "yarn run build && yarn run watch",
     "debug": "yarn run build && yarn run watch-debug",
     "build": "yarn run build-ts",
@@ -44,11 +45,14 @@
     "@types/node": "^16.11.4",
     "@types/pg": "^8.6.1",
     "@types/pg-format": "^1.0.2",
+    "@types/supertest": "^2.0.11",
     "c8": "^7.10.0",
     "chai": "^4.3.4",
     "concurrently": "^6.3.0",
     "mocha": "^9.1.3",
     "nodemon": "^2.0.14",
+    "nyc": "^15.1.0",
+    "supertest": "^6.1.6",
     "ts-node": "^10.4.0",
     "tslint": "^6.1.3",
     "typescript": "^4.4.4"
