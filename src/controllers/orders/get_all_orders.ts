@@ -1,12 +1,16 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import db from '../../setup/database'
 import { OrderDAO, PgOrderDAO } from '../../db/orderdao'
 
-export async function getAllOrders(req: Request, res: Response) {
+export async function getAllOrders(req: Request, res: Response, next: NextFunction) {
 	const orderDAO = new OrderDAO(new PgOrderDAO(db))
 	
-	const result = await handlerGetAllOrders(orderDAO)
-	res.status(result.status).json(result.body)
+	try {
+		const result = await handlerGetAllOrders(orderDAO)
+		res.status(result.status).json(result.body)
+	} catch(e) {
+		next(e)
+	}
 }
 
 export async function handlerGetAllOrders(orderDAO: OrderDAO) {

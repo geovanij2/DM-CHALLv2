@@ -3,7 +3,7 @@ import * as orders from './orders'
 import * as products from './products'
 
 function errorHandler(err: any, req: Request, res: Response) {
-	console.log(err)
+	console.error(err)
 	res.status(500).end()
 }
 

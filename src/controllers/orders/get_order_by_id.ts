@@ -1,16 +1,20 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import db from '../../setup/database'
 import { OrderDAO, PgOrderDAO } from '../../db/orderdao'
 import { pipe } from 'fp-ts/function'
 import { match } from 'fp-ts/Either'
 import { containsOnlyDigits } from '../../validators'
 
-export async function getOrderById(req: Request, res: Response) {
+export async function getOrderById(req: Request, res: Response, next: NextFunction) {
 	const { id } = req.params
 	const orderDAO = new OrderDAO(new PgOrderDAO(db))
 	
-	const { status, body } = await handlerGetOrder(orderDAO, id)
-	res.status(status).json(body)
+	try {
+		const { status, body } = await handlerGetOrder(orderDAO, id)
+		res.status(status).json(body)
+	} catch(e) {
+		next(e)
+	}
 }
 
 export async function handlerGetOrder(orderDAO: OrderDAO, id: any) {

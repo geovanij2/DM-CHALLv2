@@ -1,17 +1,17 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import db from '../../setup/database'
 import { PgProductDAO, ProductDAO } from '../../db/productdao'
 import { match } from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
 
-export async function getProductByName(req: Request, res: Response) {
+export async function getProductByName(req: Request, res: Response, next: NextFunction) {
 	const { name } = req.params
 	const productDAO = new ProductDAO(new PgProductDAO(db))
 	try {
 		const result = await handlerGetProduct(productDAO,name)
 		res.status(result.status).json(result.body)
 	} catch (err) {
-		throw err // unknown error
+		next(err)
 	}
 }
 
