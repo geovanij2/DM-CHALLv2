@@ -7,8 +7,8 @@
   "license": "MIT",
   "scripts": {
     "clean": "rm -rf dist && rm -rf node_modules",
-    "test": "mocha --exit --timeout 10000 dist/tests/unit_tests",
-    "coverage": "nyc yarn test",
+    "test": "yarn run build && mocha --exit --timeout 10000 dist/tests/**/*.js",
+    "coverage": "yarn run build && nyc yarn test",
     "start": "yarn run build && yarn run watch",
     "debug": "yarn run build && yarn run watch-debug",
     "build": "yarn run build-ts",
