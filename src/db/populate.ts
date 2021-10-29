@@ -17,11 +17,11 @@ async function populate() {
 		const sql = format('INSERT INTO products (name, price, quantity) VALUES %L', productsWithPriceInCents)
 		console.log(sql)
 		await db.query(sql, [])
+		process.exit(0)
 	} catch(err) {
 		console.error(err)
 		process.exit(0)
 	}
-	process.exit(0)
 }
 
 populate()
