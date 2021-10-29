@@ -2,4 +2,5 @@
 
 yarn db-migrate up
 node ./dist/src/db/populate.js
-yarn start
+node ./dist/src/index.js
+#yarn start

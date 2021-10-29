@@ -17,6 +17,6 @@ export function isCreateOrderBody(a: any): a is CreateOrderBody {
 	}
 }
 
+export const containsOnlyDigits = (str: string) => /^\d+$/.test(str)
+
 type CreateOrderBody = Array<{name: string, quantity: number}>
-
-
