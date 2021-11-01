@@ -4,6 +4,8 @@ Delivery Much Backend Tech Challenge
 Para rodar a applicação:
 
 ```shell
+$ yarn
+
 $ docker-compose up -d
 ```
 
