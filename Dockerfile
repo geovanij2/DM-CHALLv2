@@ -17,4 +17,6 @@ RUN yarn tsc
 
 RUN ["chmod", "+x", "/usr/src/app/scripts/start.sh"]
 
-CMD ./scripts/start.sh
+CMD yarn db-migrate up && node ./dist/src/db/populate.js && yarn start
+
+#./scripts/start.sh
