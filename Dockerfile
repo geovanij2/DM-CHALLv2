@@ -15,6 +15,6 @@ COPY . .
 
 RUN yarn tsc
 
-# RUN ["chmod", "+x", "/usr/src/app/scripts/start.sh"]
+RUN ["chmod", "+x", "/usr/src/app/scripts/start.sh"]
 
 CMD ./scripts/start.sh
